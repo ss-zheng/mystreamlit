@@ -158,7 +158,7 @@ for icaoId in airport_ids:
     # """)
 
 st.header(":scales: C-172S WEIGHT AND BALANCE SHEET", divider="rainbow")
-aircraft = st.selectbox("Aircraft", ["C-FAQA", "C-FMNB"])
+aircraft = st.selectbox("Aircraft", ["C-FAQA", "C-FMNB", "C-CAU"])
 passenger_weight = st.slider(
         "Pilot & Front Passengers",
         min_value=100,
@@ -189,6 +189,7 @@ baggage_area2_weight = 0
 if others:
     rear_seats_weight = st.number_input("Rear Seats",
                     min_value=0,
+
                     max_value=200,
                     value=0,
                     step=1
@@ -209,7 +210,8 @@ if others:
 
 weight_and_balance_dict = {
         "C-FAQA": {"item": "Basic Empty Weight", "weight": 1665.47, "arm": 39.06, "moment": 65055.33},
-        "C-FMNB": {"item": "Basic Empty Weight", "weight": 1765.47, "arm": 38.01, "moment": 66055.33}
+        "C-FMNB": {"item": "Basic Empty Weight", "weight": 1701, "arm": 40.08, "moment": 69876},
+        "C-FCAU": {"item": "Basic Empty Weight", "weight": 1734, "arm": 43.85, "moment": 76044}
 }
 
 basic_empty_weight = weight_and_balance_dict[aircraft]
