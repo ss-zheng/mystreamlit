@@ -37,6 +37,29 @@ def metar_and_taf(airport_ids):
     
     return response.json()
 
+def atis(icao_id):
+    url = f"https://atisgenerator.com/api/v1/airports/{icao_id}/atis"
+    payload = {
+        "ident": "A",
+        "icao": "KJAX",
+        "remarks1": "Custom remarks.",
+        "remarks2": {},
+        "landing_runways": ["08", "26"],
+        "departing_runways": ["08", "26"],
+        "output-type": "atis",
+        "override_runways": False,
+        "metar": "KJAX 201853Z 00000KT 10SM FEW250 28/22 A3000 RMK AO2 SLP159 T02780217"
+    }
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url, json=payload, headers=headers)
+    return response.json()
+
+
+def runways(icao_id):
+    url = f"https://atisgenerator.com/api/v1/airports/{icao_id}/runways"
+    response = requests.get(url)
+    return response.json()
+
 # def metar_and_taf_callback():
 #     airport_ids = st.session_state['metar_and_taf']
 #     metar_and_taf_info = metar_and_taf(airport_ids)
@@ -60,10 +83,14 @@ airport_ids = st.multiselect(
 # st.write(airport_ids)
 for icaoId in airport_ids:
     # st.write(icaoId)
+    # atis_info = atis(icaoId)
+    # runway_info = runways(icaoId)
+    # st.write(runway_info) 
     airport_info = metar_and_taf(icaoId)[0]
     # st.write(airport_info)
     pst_time_str = utc2pst(airport_info["reportTime"])
     # # **{airport_info["icaoId"]} - {airport_info["name"]}**
+    # `{atis_info["data"]["text"]}`
     st.markdown(f"""
     #### {airport_info["icaoId"]} - {airport_info["name"]}
 
@@ -182,6 +209,8 @@ def color_coding(row):
         return ['background-color:green'] * len(row)
     return ['background-color:transparent'] * len(row)
 
+# st.table(df)
+
 st.dataframe(
         df,
         use_container_width=True,
@@ -219,3 +248,7 @@ st.dataframe(
             )
             }
         )
+
+st.header("Appendix", divider="rainbow")
+with st.expander("CYXX AERODROM CHART"):
+    st.image("CYXX.jpg")
