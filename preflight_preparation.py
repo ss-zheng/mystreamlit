@@ -22,19 +22,38 @@ def utc2pst(utc_string):
     # The result is a datetime object with PST timezone information
     return pst_time.strftime("%Y-%m-%d %H:%M:%S")
 
-def metar_and_taf(airport_ids):
+# def metar_and_taf(airport_ids):
+#     headers = {
+#         'accept': '*/*',
+#     }
+
+#     params = {
+#         'ids': airport_ids if type(airport_ids) == str else ",".join(airport_ids),
+#         'format': 'json',
+#         'taf': 'true',
+#     }
+
+#     response = requests.get('https://aviationweather.gov/api/data/metar', params=params, headers=headers)
+    
+#     return response.json()
+
+
+def aviationweather_general(icao_id, info):
     headers = {
         'accept': '*/*',
     }
 
     params = {
-        'ids': airport_ids if type(airport_ids) == str else ",".join(airport_ids),
+        'ids': icao_id,
         'format': 'json',
-        'taf': 'true',
     }
+    if info == "pirep":
+        params = {
+            'id': icao_id,
+            'format': 'json',
+        }
 
-    response = requests.get('https://aviationweather.gov/api/data/metar', params=params, headers=headers)
-    
+    response = requests.get(f'https://aviationweather.gov/api/data/{info}', params=params, headers=headers)
     return response.json()
 
 def atis(icao_id):
@@ -74,32 +93,69 @@ st.markdown(
 st.header(":mostly_sunny: METAR and TAF", divider="rainbow")
 airport_ids = st.multiselect(
     'Select Airport IDs',
-    ['CYXX', 'CYVR'],
+    ['CYXX', 'CYVR', 'CYPK', 'CYHE'],
     ['CYXX'],
     key="metar_and_taf"
     )
     # this api only have CYXX and CYVR, also CYHE(no taf) ['CYXX', 'CYPK', 'CYHE', 'CZBB', 'CYVR'],
     
-# st.write(airport_ids)
 for icaoId in airport_ids:
-    # st.write(icaoId)
-    # atis_info = atis(icaoId)
-    # runway_info = runways(icaoId)
-    # st.write(runway_info) 
-    airport_info = metar_and_taf(icaoId)[0]
+    
+    airport_info = aviationweather_general(icaoId, "airport")[0]
+    # station_info = aviationweather_general(icaoId, "stationinfo")
+    metar_info = aviationweather_general(icaoId, "metar")
+    taf_info = aviationweather_general(icaoId, "taf")
+    pirep_info = aviationweather_general(icaoId, "pirep")
+    
+    # st.write(station_info)
     # st.write(airport_info)
-    pst_time_str = utc2pst(airport_info["reportTime"])
-    # # **{airport_info["icaoId"]} - {airport_info["name"]}**
-    # `{atis_info["data"]["text"]}`
-    st.markdown(f"""
-    #### {airport_info["icaoId"]} - {airport_info["name"]}
+    st.write(f"**{airport_info['id']} - {airport_info['name']}, {airport_info['state']} {airport_info['country']}**")
+    for freq in airport_info["freqs"]:
+        st.write(f"{freq['type']}: {freq['freq']}")
+    
+    tabs = []
+    tabs_info = []
+    if metar_info:
+        tabs.append("metar")
+        tabs_info.append(metar_info)
+    if taf_info:
+        tabs.append("taf")
+        tabs_info.append(taf_info)
+    if pirep_info:
+        tabs.append("pirep")
+        tabs_info.append(pirep_info)
 
-    Report Time: {pst_time_str} PST
+    if not tabs:
+        continue
 
-    `{airport_info["rawOb"]}`
+    st_tabs = st.tabs(tabs)
 
-    `{airport_info["rawTaf"]}`
-    """)
+    for st_tab, tab_info in zip(st_tabs, tabs_info):
+        with st_tab:
+            content = tab_info[0]["rawOb"] if "rawOb" in tab_info[0] else tab_info[0]["rawTAF"]
+            format_content = content.replace("BECMG", "\nBECMG")
+            format_content = format_content.replace("FM", "\nFM")
+            format_content = format_content.replace("PROB", "\nPROB")
+            format_content = format_content.replace("RMK", "\nRMK")
+            # st.write(tab_info)
+            st.code(format_content, language="bash")
+
+
+    # airport_info = metar_and_taf(icaoId)[0]
+    # # st.write(airport_info)
+    # pst_time_str = utc2pst(airport_info["reportTime"])
+    # # # **{airport_info["icaoId"]} - {airport_info["name"]}**
+    # # `{atis_info["data"]["text"]}`
+
+    # st.markdown(f"""
+    # #### {airport_info["icaoId"]} - {airport_info["name"]}
+
+    # Report Time: {pst_time_str} PST
+
+    # `{airport_info["rawOb"]}`
+
+    # `{airport_info["rawTaf"]}`
+    # """)
 
 st.header(":scales: C-172S WEIGHT AND BALANCE SHEET", divider="rainbow")
 aircraft = st.selectbox("Aircraft", ["C-FAQA", "C-FMNB"])
