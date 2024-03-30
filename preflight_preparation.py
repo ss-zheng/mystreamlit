@@ -158,7 +158,7 @@ for icaoId in airport_ids:
     # """)
 
 st.header(":scales: C-172S WEIGHT AND BALANCE SHEET", divider="rainbow")
-aircraft = st.selectbox("Aircraft", ["C-FAQA", "C-FMNB", "C-CAU"])
+aircraft = st.selectbox("Aircraft", ["C-FAQA", "C-FMNB", "C-FCAU"])
 passenger_weight = st.slider(
         "Pilot & Front Passengers",
         min_value=100,
