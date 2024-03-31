@@ -4,8 +4,13 @@ Here's our first attempt at using data to create a table:
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
+from navcanada import navcanada_request
 from datetime import datetime
+from matplotlib.ticker import FuncFormatter
+import matplotlib.pyplot as plt
 import pandas as pd
+import json
 import requests
 import pytz
 
@@ -21,22 +26,6 @@ def utc2pst(utc_string):
     pst_time = given_date_utc.astimezone(pytz.timezone('US/Pacific'))
     # The result is a datetime object with PST timezone information
     return pst_time.strftime("%Y-%m-%d %H:%M:%S")
-
-# def metar_and_taf(airport_ids):
-#     headers = {
-#         'accept': '*/*',
-#     }
-
-#     params = {
-#         'ids': airport_ids if type(airport_ids) == str else ",".join(airport_ids),
-#         'format': 'json',
-#         'taf': 'true',
-#     }
-
-#     response = requests.get('https://aviationweather.gov/api/data/metar', params=params, headers=headers)
-    
-#     return response.json()
-
 
 def aviationweather_general(icao_id, info):
     headers = {
@@ -73,7 +62,6 @@ def atis(icao_id):
     response = requests.post(url, json=payload, headers=headers)
     return response.json()
 
-
 def runways(icao_id):
     url = f"https://atisgenerator.com/api/v1/airports/{icao_id}/runways"
     response = requests.get(url)
@@ -90,7 +78,7 @@ st.markdown(
         )
 # st.divider()
 
-st.header(":mostly_sunny: METAR and TAF", divider="rainbow")
+st.header(":mostly_sunny: Weather and NOTAM", divider="rainbow")
 airport_ids = st.multiselect(
     'Select Airport IDs',
     ['CYXX', 'CYVR', 'CYPK', 'CYHE'],
@@ -106,6 +94,7 @@ for icaoId in airport_ids:
     metar_info = aviationweather_general(icaoId, "metar")
     taf_info = aviationweather_general(icaoId, "taf")
     pirep_info = aviationweather_general(icaoId, "pirep")
+    notam_info = navcanada_request([icaoId], options={"alpha": ['notam']})
     
     # st.write(station_info)
     # st.write(airport_info)
@@ -124,38 +113,30 @@ for icaoId in airport_ids:
     if pirep_info:
         tabs.append("pirep")
         tabs_info.append(pirep_info)
+    if notam_info:
+        tabs.append("notam")
+        tabs_info.append(notam_info)
 
     if not tabs:
         continue
 
     st_tabs = st.tabs(tabs)
 
-    for st_tab, tab_info in zip(st_tabs, tabs_info):
-        with st_tab:
-            content = tab_info[0]["rawOb"] if "rawOb" in tab_info[0] else tab_info[0]["rawTAF"]
-            format_content = content.replace("BECMG", "\nBECMG")
-            format_content = format_content.replace("FM", "\nFM")
-            format_content = format_content.replace("PROB", "\nPROB")
-            format_content = format_content.replace("RMK", "\nRMK")
-            # st.write(tab_info)
-            st.code(format_content, language="bash")
+    for tab, st_tab, tab_info in zip(tabs, st_tabs, tabs_info):
+        if tab == "notam":
+            with st_tab:
+                for notam in tab_info:
+                    st.code(json.loads(notam["text"])["raw"], language="bash")
+        else:
+            with st_tab:
+                content = tab_info[0]["rawOb"] if "rawOb" in tab_info[0] else tab_info[0]["rawTAF"]
+                format_content = content.replace("BECMG", "\nBECMG")
+                format_content = format_content.replace("FM", "\nFM")
+                format_content = format_content.replace("PROB", "\nPROB")
+                format_content = format_content.replace("RMK", "\nRMK")
+                # st.write(tab_info)
+                st.code(format_content, language="bash")
 
-
-    # airport_info = metar_and_taf(icaoId)[0]
-    # # st.write(airport_info)
-    # pst_time_str = utc2pst(airport_info["reportTime"])
-    # # # **{airport_info["icaoId"]} - {airport_info["name"]}**
-    # # `{atis_info["data"]["text"]}`
-
-    # st.markdown(f"""
-    # #### {airport_info["icaoId"]} - {airport_info["name"]}
-
-    # Report Time: {pst_time_str} PST
-
-    # `{airport_info["rawOb"]}`
-
-    # `{airport_info["rawTaf"]}`
-    # """)
 
 st.header(":scales: C-172S WEIGHT AND BALANCE SHEET", divider="rainbow")
 aircraft = st.selectbox("Aircraft", ["C-FAQA", "C-FMNB", "C-FCAU"])
@@ -212,6 +193,12 @@ weight_and_balance_dict = {
         "C-FAQA": {"item": "Basic Empty Weight", "weight": 1665.47, "arm": 39.06, "moment": 65055.33},
         "C-FMNB": {"item": "Basic Empty Weight", "weight": 1701, "arm": 40.08, "moment": 69876},
         "C-FCAU": {"item": "Basic Empty Weight", "weight": 1734, "arm": 43.85, "moment": 76044}
+}
+
+aircraft_poh = {
+        "C-FAQA": {"normal": {"col1": [35,35,41,47.1,47.1], "col2": [0,1980,2580,2580,0]}, "utility": {"col1": [35,35,37.5,40.5,40.5], "col2": [0,1980,2200,2200,0]}},
+        "C-FMNB": {"normal": {"col1": [35,35,41,47.1,47.1], "col2": [0,1980,2580,2580,0]}, "utility": {"col1": [35,35,37.5,40.5,40.5], "col2": [0,1980,2200,2200,0]}},
+        "C-FCAU": {"normal": {"col1": [35,35,41,47.1,47.1], "col2": [0,1980,2580,2580,0]}, "utility": {"col1": [35,35,37.5,40.5,40.5], "col2": [0,1980,2200,2200,0]}},
 }
 
 basic_empty_weight = weight_and_balance_dict[aircraft]
@@ -279,7 +266,7 @@ st.dataframe(
                 help="Weight in LBS",
                 # min_value=0,
                 # max_value=200,
-                step=1,
+                # step=1,
                 # format="%d lb(s)",
                 # width="medium",
                 required=True,
@@ -289,7 +276,7 @@ st.dataframe(
                 help="Arm in in",
                 min_value=0,
                 max_value=200,
-                step=1,
+                # step=1,
                 # format="%.2f",
                 # width="medium",
                 required=True,
@@ -299,13 +286,62 @@ st.dataframe(
                 help="MOMENT",
                 # min_value=0,
                 # max_value=200,
-                step=1,
+                # step=1,
                 # format="%.2f",
                 # width="medium",
                 required=True,
             )
             }
         )
+
+import numpy as np
+
+chart_data = pd.DataFrame(
+   {
+       "col1": np.array(aircraft_poh[aircraft]['normal']['col1'] + aircraft_poh[aircraft]['utility']['col1'] + [zero_fuel_weight['arm'], landing_weight['arm'], take_off_weight['arm']]),
+       "col2": np.array(aircraft_poh[aircraft]['normal']['col2'] + aircraft_poh[aircraft]['utility']['col2'] + [zero_fuel_weight['weight'], landing_weight['weight'], take_off_weight['weight']]),
+       "col3": np.array(['Normal'] * 5 + ['Utility'] * 5 + ['W&B'] * 3)
+   }
+)
+
+arr = np.random.normal(1, 1, size=100)
+# plt.style.use("Solarize_Light2")
+# plt.style.use(['bmh'])
+plt.style.use('https://github.com/dhaitz/matplotlib-stylesheets/raw/master/pitayasmoothie-light.mplstyle')
+fig, ax = plt.subplots()
+
+for category, group_data in chart_data.groupby('col3'):
+    ax.plot(group_data['col1'], group_data['col2'], marker='o', label=category)
+
+lower_bound_lbs = 1500
+ax.set_ylim(lower_bound_lbs, max(chart_data['col2']) * 1.05)  # setting the upper limit to 10% above the max value
+
+ax2 = ax.twinx()
+ax2.set_ylabel('LOADED AIRPLANE WEIGHT (KILOGRAMS)')
+
+lbs_to_kg = 0.453592
+ax2.set_ylim(ax.get_ylim()[0] * lbs_to_kg, ax.get_ylim()[1] * lbs_to_kg)
+
+# Create a secondary x-axis at the top for millimeters
+ax3 = ax.twiny()
+ax3.set_xlabel('Center of Gravity Location (millimeters aft of datum)')
+
+# Function to convert inches to millimeters
+def inches_to_mm(x):
+    return x * 25.4
+
+# Setting the limits for the top x-axis based on the bottom x-axis limits converted to millimeters
+ax3.set_xlim(inches_to_mm(ax.get_xlim()[0]), inches_to_mm(ax.get_xlim()[1]))
+
+# ax.set_title('C.G. LOCATION ')
+ax.set_xlabel('AIRPLANE C.G. LOCATION - INCHES AFT OF DATUM (STA. 0.0)')
+ax.set_ylabel('LOADED AIRPLANE WEIGHT (POUNDS)')
+ax.legend()
+ax.grid(True)
+ax2.grid(True, linestyle='--')
+ax3.grid(True, linestyle='--')
+
+st.pyplot(fig)
 
 st.header("Appendix", divider="rainbow")
 with st.expander("CYXX AERODROM CHART"):
