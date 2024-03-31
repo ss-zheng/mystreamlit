@@ -7,7 +7,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 from navcanada import navcanada_request
 from datetime import datetime
-from matplotlib.ticker import FuncFormatter
 import matplotlib.pyplot as plt
 import pandas as pd
 import json
@@ -137,6 +136,35 @@ for icaoId in airport_ids:
                 # st.write(tab_info)
                 st.code(format_content, language="bash")
 
+
+st.header(":memo: Checklists", divider="rainbow")
+with st.expander("Walk Around Checklist"):
+    st.markdown("""
+    <ul style="list-style-type:none;">
+        <li><input type="checkbox"> Fuel sample(5/5/3) and fuel quantity</li>
+        <li><input type="checkbox"> Oil level</li>
+        <li><input type="checkbox"> Electrics, all lights and pitot heat, flaps and annunciator panel</li>
+        <li><input type="checkbox"> Left tire, brake, flap, aileron</li>
+        <li><input type="checkbox"> Baggage</li>
+        <li><input type="checkbox"> Left horizontal stabilizer, elevator</li>
+        <li><input type="checkbox"> Rudder</li>
+        <li><input type="checkbox"> Right horizontal stabilizer, elevator</li>
+        <li><input type="checkbox"> ELT</li>
+        <li><input type="checkbox"> Right tire, brake, flap, aileron</li>
+        <li><input type="checkbox"> Right leading edge</li>
+        <li><input type="checkbox"> Right cabin vent ports</li>
+        <li><input type="checkbox"> Exhaust</li>
+        <li><input type="checkbox"> Nose wheel, oleo, shimmy damper</li>
+        <li><input type="checkbox"> Propeller blade, cone</li>
+        <li><input type="checkbox"> Alternator belt, air intake, no animals inside engine compartment</li>
+        <li><input type="checkbox"> Static port</li>
+        <li><input type="checkbox"> Left cabin vent ports</li>
+        <li><input type="checkbox"> Pitot tube</li>
+        <li><input type="checkbox"> Stall horn</li>
+        <li><input type="checkbox"> Fuel vent</li>
+        <li><input type="checkbox"> Left leading edge</li>
+    </ul>
+    """, unsafe_allow_html=True)
 
 st.header(":scales: C-172S WEIGHT AND BALANCE SHEET", divider="rainbow")
 aircraft = st.selectbox("Aircraft", ["C-FAQA", "C-FMNB", "C-FCAU"])
