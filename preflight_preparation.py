@@ -345,4 +345,8 @@ st.pyplot(fig)
 
 st.header("Appendix", divider="rainbow")
 with st.expander("CYXX AERODROM CHART"):
-    st.image("CYXX.jpg")
+    st.image("images/CYXX.jpg")
+
+with st.expander("UNDERSTANDING METAR AND TAF"):
+    st.image("images/Understanding-METAR-and-TAF-p1.jpg")
+    st.image("images/Understanding-METAR-and-TAF-p2.jpg")
