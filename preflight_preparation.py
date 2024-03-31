@@ -372,6 +372,22 @@ ax3.grid(True, linestyle='--')
 st.pyplot(fig)
 
 st.header("Appendix", divider="rainbow")
+with st.expander("TAKE OFF BRIFING"):
+    st.markdown("""
+* Wind is from 010 degree at 5 knots.
+* We will use runway 01.
+* We will perform a normal take off.
+* The calls on the roll will be "Power full, gauges green, airspeed live", and we will rotate at 55 knots.
+* The decision points will be Bravo
+
+Malfunction handling
+* Any malfunction before take off, I will close the throttle, apply maximum braking and stop on the runway.
+* Any engine fire or failure after take off below circuit altitude, I will close the throttle and land straight ahead.
+* Any engine fire or failure above circuit altitude, I will turn back and land on the airport surface.
+
+* Any questions?
+    """)
+
 with st.expander("CYXX AERODROM CHART"):
     st.image("images/CYXX.jpg")
 
