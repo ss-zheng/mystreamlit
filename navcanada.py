@@ -32,6 +32,7 @@ def navcanada_request(icaos, options):
     if response.status_code == 200:
         for item in json.loads(response.text)['data']:
             if any(icao_id in item['text'] for icao_id in icaos):
+                # print(item)
                 filtered_data.append(item)
         # Process the response if needed
         return sorted(filtered_data, key=lambda x: x['startValidity'], reverse=True) # For example, print the response text
@@ -39,4 +40,4 @@ def navcanada_request(icaos, options):
         raise f"Request failed with status code: {response.status_code}"
     
 # print(navcanada_request(["CYXX"], options={"alpha": ['sigmet', 'airmet', 'notam', 'metar']}))
-navcanada_request(["CYXX"], options={"alpha": ['notam']})
+navcanada_request(["CYXX"], options={"alpha": ['metar', 'pirep']})

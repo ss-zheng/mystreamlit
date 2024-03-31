@@ -15,16 +15,33 @@ import pytz
 
 
 def utc2pst(utc_string):
-    # The given date and time in YYYY-MM-DD HH:MM:SS format
-    given_date_str = utc_string
-    # Convert the given date string to a datetime object
-    given_date = datetime.strptime(given_date_str, "%Y-%m-%d %H:%M:%S")
+    formats = [
+        "%Y-%m-%dT%H:%M:%S",  # ISO 8601 Format
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M:%S%z",  # Extended Format with Timezone Information
+        "%m/%d/%Y %I:%M:%S %p",  # US Format with AM/PM
+        "%d-%m-%Y %H:%M",  # European Format with 24-hour Clock
+        "%Y%m%d%H%M%S",  # Compact Format
+        "%A, %B %d, %Y at %I:%M %p"  # Verbose Format
+    ]
+    given_date = None
+    for fmt in formats:
+        try:
+            # Attempt to parse the datetime string with the current format
+            given_date = datetime.strptime(utc_string, fmt)
+        except ValueError:
+            # If parsing fails, continue to the next format
+            continue
+    if not given_date:
+        raise ValueError(f"Failed to parse {utc_string}")
+
     # Assuming the given datetime is in UTC, we'll set the timezone to UTC
     given_date_utc = given_date.replace(tzinfo=pytz.utc)
     # Convert the UTC datetime to PST
     pst_time = given_date_utc.astimezone(pytz.timezone('US/Pacific'))
     # The result is a datetime object with PST timezone information
-    return pst_time.strftime("%Y-%m-%d %H:%M:%S")
+    return pst_time.strftime("%Y-%m-%d %H:%M:%S %Z")
 
 def aviationweather_general(icao_id, info):
     headers = {
@@ -43,33 +60,6 @@ def aviationweather_general(icao_id, info):
 
     response = requests.get(f'https://aviationweather.gov/api/data/{info}', params=params, headers=headers)
     return response.json()
-
-def atis(icao_id):
-    url = f"https://atisgenerator.com/api/v1/airports/{icao_id}/atis"
-    payload = {
-        "ident": "A",
-        "icao": "KJAX",
-        "remarks1": "Custom remarks.",
-        "remarks2": {},
-        "landing_runways": ["08", "26"],
-        "departing_runways": ["08", "26"],
-        "output-type": "atis",
-        "override_runways": False,
-        "metar": "KJAX 201853Z 00000KT 10SM FEW250 28/22 A3000 RMK AO2 SLP159 T02780217"
-    }
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(url, json=payload, headers=headers)
-    return response.json()
-
-def runways(icao_id):
-    url = f"https://atisgenerator.com/api/v1/airports/{icao_id}/runways"
-    response = requests.get(url)
-    return response.json()
-
-# def metar_and_taf_callback():
-#     airport_ids = st.session_state['metar_and_taf']
-#     metar_and_taf_info = metar_and_taf(airport_ids)
-#     st.write(metar_and_taf_info)
 
 st.title(":airplane_departure: :blue[PPL] Preflight Preparation")
 st.markdown(
@@ -109,12 +99,12 @@ for icaoId in airport_ids:
     if taf_info:
         tabs.append("taf")
         tabs_info.append(taf_info)
-    if pirep_info:
-        tabs.append("pirep")
-        tabs_info.append(pirep_info)
     if notam_info:
         tabs.append("notam")
         tabs_info.append(notam_info)
+    if pirep_info:
+        tabs.append("pirep")
+        tabs_info.append(pirep_info)
 
     if not tabs:
         continue
@@ -125,6 +115,7 @@ for icaoId in airport_ids:
         if tab == "notam":
             with st_tab:
                 for notam in tab_info:
+                    st.write(utc2pst(notam['startValidity']))
                     st.code(json.loads(notam["text"])["raw"], language="bash")
         else:
             with st_tab:
@@ -133,7 +124,10 @@ for icaoId in airport_ids:
                 format_content = format_content.replace("FM", "\nFM")
                 format_content = format_content.replace("PROB", "\nPROB")
                 format_content = format_content.replace("RMK", "\nRMK")
-                # st.write(tab_info)
+                
+                if any(key in tab_info[0] for key in ["reportTime", "issueTime"]):
+                    utc_time_str = tab_info[0]['reportTime'] if 'reportTime' in tab_info[0] else tab_info[0]["issueTime"]
+                    st.write(utc2pst(utc_time_str))
                 st.code(format_content, language="bash")
 
 
