@@ -88,8 +88,14 @@ for icaoId in airport_ids:
     # st.write(station_info)
     # st.write(airport_info)
     st.write(f"**{airport_info['id']} - {airport_info['name']}, {airport_info['state']} {airport_info['country']}**")
-    # for freq in airport_info["freqs"]:
-    #     st.write(f"{freq['type']}: {freq['freq']}")
+    
+    if isinstance(airport_info["freqs"], list):
+        for freq in airport_info["freqs"]:
+            st.write(f"{freq['type']}: {freq['freq']}")
+    elif isinstance(airport_info["freqs"], str):
+            st.write(airport_info["freqs"])
+    else:
+        pass
     
     tabs = []
     tabs_info = []
